@@ -1,12 +1,55 @@
 <?php
 
 namespace App\Entity;
-use ApiPlatform\Core\Annotation\ApiResource;
 use Doctrine\ORM\Mapping as ORM;
+use ApiPlatform\Core\Annotation\ApiResource;
+use ApiPlatform\Core\Annotation\ApiSubresource;
+use Symfony\Component\Serializer\Annotation\Groups;
+use Symfony\Component\Validator\Constraints as Assert;
 use Symfony\Component\Security\Core\User\UserInterface;
-
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 /**
- * @ApiResource
+ * @ApiResource(
+ * collectionOperations={
+ *          "get"={"security"="is_granted('ROLE_ADMIN')",
+ *           "security_message"="Acces refuse. Seul Admin System ou Admin peut lister les elements d'une ressource",
+ *            "normalisation_context"={"groups"={"get"}},
+ *         },
+ *          "createAdmin"={
+ *          "method"="POST",
+ *          "path"="/users/admin/new",
+ *              "security"="is_granted('ROLE_SUP_ADMIN')", 
+ *              "security_message"="Acces refuse. Seul Admin System peut creer un Admin "
+ *                 },
+ *          "createCaissier"={
+ *          "method"="POST",
+ *          "path"="/users/caissier/new",
+ *              "security"="is_granted('ROLE_ADMIN')", 
+ *              "security_message"="Acces refuse. Seul Admin System ou Admin peut creer un  Caissier"
+ *                 }
+ *             },
+ * itemOperations={
+ *          "get"={"security"="is_granted('ROLE_ADMIN')",
+ *          "security_message"="Acces refuse. Seul Admin System ou Admin peut lister un element d'une ressource",
+ *           "normalisation_context"={"groups"={"get"}}
+ *              },
+ *          "blockedAdmin"={
+ *          "method"="PUT",
+ *          "path"="/users/admin/{id}",
+ *              "security"="is_granted('ROLE_SUP_ADMIN')",
+ *              "security_message"="Acces refuse. Seul Admin System peut bloquer un Admin "
+ *                   },
+ *          "blockedCaissier"={
+ *          "method"="PUT",
+ *          "path"="/users/caissier/{id}",
+ *              "security"="is_granted('ROLE_ADMIN')",
+ *              "security_message"="Acces refuse. Seul Admin System ou Admin peut bloquer un Caissier"
+ *                   },
+ *          "delete"={"security"="is_granted('ROLE_SUP_ADMIN')",
+ *          "security_message"="Acces Refuse. Seul le Super Admin peut supprimer un User"    
+ *               }
+ *     } 
+ * )
  * @ORM\Entity(repositoryClass="App\Repository\UserRepository")
  */
 class User implements UserInterface
@@ -40,15 +83,16 @@ class User implements UserInterface
      */
     private $role;
 
-    /**
-     * @ORM\Column(type="boolean")
-     */
-    private $Isactif;
-
+    
     /**
      * @ORM\Column(type="string", length=255)
      */
     private $nomcomplet;
+
+    /**
+     * @ORM\Column(type="boolean")
+     */
+    private $isactive;
 
     public function getId(): ?int
     {
@@ -80,13 +124,13 @@ class User implements UserInterface
     /**
      * @see UserInterface
      */
-    public function getRoles(): array
+    public function getRoles() 
     {
         $roles = $this->roles;
         // guarantee every user at least has ROLE_USER
-        $roles[] = 'ROLE_USER';
+       
 
-        return array_unique($roles);
+        return $roles;
     }
 
     public function setRoles(array $roles): self
@@ -140,17 +184,6 @@ class User implements UserInterface
         return $this;
     }
 
-    public function getIsactif(): ?bool
-    {
-        return $this->Isactif;
-    }
-
-    public function setIsactif(bool $Isactif): self
-    {
-        $this->Isactif = $Isactif;
-
-        return $this;
-    }
 
     public function getNomcomplet(): ?string
     {
@@ -160,6 +193,18 @@ class User implements UserInterface
     public function setNomcomplet(string $nomcomplet): self
     {
         $this->nomcomplet = $nomcomplet;
+
+        return $this;
+    }
+
+    public function getIsactive(): ?bool
+    {
+        return $this->isactive;
+    }
+
+    public function setIsactive(bool $isactive): self
+    {
+        $this->isactive = $isactive;
 
         return $this;
     }
