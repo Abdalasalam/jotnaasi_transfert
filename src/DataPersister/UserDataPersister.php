@@ -3,6 +3,7 @@ namespace App\DataPersister;
 
 use App\Entity\Role;
 use App\Entity\User;
+use App\DataPersister\UserDataPersister;
 use Doctrine\ORM\EntityManagerInterface;
 use ApiPlatform\Core\DataPersister\DataPersisterInterface;
 use Symfony\Component\Security\Core\Encoder\UserPasswordEncoderInterface;

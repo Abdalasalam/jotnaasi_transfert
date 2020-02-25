@@ -4,7 +4,7 @@ security:
             algorithm: bcrypt
 
     role_hierarchy:    
-        ROLE_SUP_ADMIN: [ROLE_ADMIN , ROLE_CAISSIER]
+        ROLE_SUP_ADMIN: ROLE_ADMIN
         ROLE_ADMIN: ROLE_CAISSIER
 
             

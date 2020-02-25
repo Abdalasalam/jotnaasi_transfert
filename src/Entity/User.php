@@ -1,6 +1,8 @@
 <?php
 
 namespace App\Entity;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use ApiPlatform\Core\Annotation\ApiResource;
 use ApiPlatform\Core\Annotation\ApiSubresource;
@@ -10,46 +12,8 @@ use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 /**
  * @ApiResource(
- * collectionOperations={
- *          "get"={"security"="is_granted('ROLE_ADMIN')",
- *           "security_message"="Acces refuse. Seul Admin System ou Admin peut lister les elements d'une ressource",
- *            "normalisation_context"={"groups"={"get"}},
- *         },
- *          "createAdmin"={
- *          "method"="POST",
- *          "path"="/users/admin/new",
- *              "security"="is_granted('ROLE_SUP_ADMIN')", 
- *              "security_message"="Acces refuse. Seul Admin System peut creer un Admin "
- *                 },
- *          "createCaissier"={
- *          "method"="POST",
- *          "path"="/users/caissier/new",
- *              "security"="is_granted('ROLE_ADMIN')", 
- *              "security_message"="Acces refuse. Seul Admin System ou Admin peut creer un  Caissier"
- *                 }
- *             },
- * itemOperations={
- *          "get"={"security"="is_granted('ROLE_ADMIN')",
- *          "security_message"="Acces refuse. Seul Admin System ou Admin peut lister un element d'une ressource",
- *           "normalisation_context"={"groups"={"get"}}
- *              },
- *          "blockedAdmin"={
- *          "method"="PUT",
- *          "path"="/users/admin/{id}",
- *              "security"="is_granted('ROLE_SUP_ADMIN')",
- *              "security_message"="Acces refuse. Seul Admin System peut bloquer un Admin "
- *                   },
- *          "blockedCaissier"={
- *          "method"="PUT",
- *          "path"="/users/caissier/{id}",
- *              "security"="is_granted('ROLE_ADMIN')",
- *              "security_message"="Acces refuse. Seul Admin System ou Admin peut bloquer un Caissier"
- *                   },
- *          "delete"={"security"="is_granted('ROLE_SUP_ADMIN')",
- *          "security_message"="Acces Refuse. Seul le Super Admin peut supprimer un User"    
- *               }
- *     } 
- * )
+ *     collectionOperations={"get" , "post"},
+ *     itemOperations={"get" , "put" , "delete"})
  * @ORM\Entity(repositoryClass="App\Repository\UserRepository")
  */
 class User implements UserInterface
@@ -62,22 +26,26 @@ class User implements UserInterface
     private $id;
 
     /**
+     * @Groups({"read", "write"}) 
      * @ORM\Column(type="string", length=180, unique=true)
      */
     private $email;
 
     /**
+     * @Groups("read")
      * @ORM\Column(type="json")
      */
     private $roles = [];
 
     /**
+     * @Groups({"read", "write"})
      * @var string The hashed password
      * @ORM\Column(type="string")
      */
     private $password;
 
     /**
+     * @Groups("write") 
      * @ORM\ManyToOne(targetEntity="App\Entity\Role", inversedBy="users")
      * @ORM\JoinColumn(nullable=false)
      */
@@ -85,14 +53,37 @@ class User implements UserInterface
 
     
     /**
-     * @ORM\Column(type="string", length=255)
+     *@Groups({"read", "write"})
+     * @ORM\Column(type="string", length=255)+
      */
     private $nomcomplet;
 
     /**
+     * @Groups({"read", "write"})
      * @ORM\Column(type="boolean")
      */
     private $isactive;
+
+    /**
+     * @ORM\OneToMany(targetEntity="App\Entity\Depot", mappedBy="depot")
+     */
+    private $depots;
+
+    /**
+     * @ORM\OneToMany(targetEntity="App\Entity\Compte", mappedBy="userObject")
+     */
+    private $comptes;
+
+    /**
+     * @ORM\ManyToOne(targetEntity="App\Entity\Partenaire", inversedBy="partenaireuser")
+     */
+    private $userpartenaire;
+
+    public function __construct()
+    {
+        $this->depots = new ArrayCollection();
+        $this->comptes = new ArrayCollection();
+    }
 
     public function getId(): ?int
     {
@@ -205,6 +196,80 @@ class User implements UserInterface
     public function setIsactive(bool $isactive): self
     {
         $this->isactive = $isactive;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection|Depot[]
+     */
+    public function getDepots(): Collection
+    {
+        return $this->depots;
+    }
+
+    public function addDepot(Depot $depot): self
+    {
+        if (!$this->depots->contains($depot)) {
+            $this->depots[] = $depot;
+            $depot->setDepot($this);
+        }
+
+        return $this;
+    }
+
+    public function removeDepot(Depot $depot): self
+    {
+        if ($this->depots->contains($depot)) {
+            $this->depots->removeElement($depot);
+            // set the owning side to null (unless already changed)
+            if ($depot->getDepot() === $this) {
+                $depot->setDepot(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection|Compte[]
+     */
+    public function getComptes(): Collection
+    {
+        return $this->comptes;
+    }
+
+    public function addCompte(Compte $compte): self
+    {
+        if (!$this->comptes->contains($compte)) {
+            $this->comptes[] = $compte;
+            $compte->setUserObject($this);
+        }
+
+        return $this;
+    }
+
+    public function removeCompte(Compte $compte): self
+    {
+        if ($this->comptes->contains($compte)) {
+            $this->comptes->removeElement($compte);
+            // set the owning side to null (unless already changed)
+            if ($compte->getUserObject() === $this) {
+                $compte->setUserObject(null);
+            }
+        }
+
+        return $this;
+    }
+
+    public function getUserpartenaire(): ?Partenaire
+    {
+        return $this->userpartenaire;
+    }
+
+    public function setUserpartenaire(?Partenaire $userpartenaire): self
+    {
+        $this->userpartenaire = $userpartenaire;
 
         return $this;
     }
